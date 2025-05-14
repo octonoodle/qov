@@ -1,10 +1,63 @@
 #include <stdio.h> 
 #include <stdlib.h> 
+#include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "lodepng.h" // not going to exist on the microcontroller
 
 #define INPUT_FILE "apples.png"
 #define OUTPUT_FILE "apples.qoi"
+
+struct pixel {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+};
+
+int index_hash(struct pixel pix) {
+  return (pix.r * 3 + pix.g * 5 + pix.b * 7) % 64;
+}
+int index_hash_a(struct pixel pix, int a) {
+  return (pix.r * 3 + pix.g * 5 + pix.b * 7 + a * 11) % 64;
+}
+
+bool pix_equal(struct pixel pix1, struct pixel pix2) {
+  return pix1.r == pix2.r && pix1.g == pix2.g && pix1.b == pix2.b;
+}
+
+void main_decode(FILE *outputptr) {
+
+  // data initialization
+  unsigned error;
+  unsigned char* image = 0;
+  unsigned width, height;
+
+  error = lodepng_decode24_file(&image, &width, &height, INPUT_FILE);
+  if(error) printf("error %u: %s\n", error, lodepng_error_text(error));
+
+  struct pixel seen_pix[64];
+  memset(seen_pix, 0, sizeof(seen_pix));
+  struct pixel prev_pix = {0,0,0};
+  
+  // chunk encoding loop
+  for(int pix = 0; pix < width * height; pix++) {
+    struct pixel this_pix = {image[3*pix], image[3*pix + 1], image[3*pix + 2]};
+    if (pix_equal(this_pix, prev_pix)) {
+      printf("hoo boy");
+    }
+  }
+  
+  //printf("\n");
+  //for (int j = 0; j <40; j+=4) {
+  //  int i = j + (4 * width * height / 2) + 13300;
+  //  printf("pixel %d: %02X%02X%02X\n",i/3,image[i],image[i+1],image[i+2]);
+  //}
+  
+  free(image);
+  printf("done");
+}
 
 int main() 
 {
@@ -78,15 +131,8 @@ int main()
   int n = sizeof(header) / sizeof(uint8_t);
   fwrite(header, sizeof(uint8_t), n, outputptr); //header
 
-  // BEGIN DATA ENCODING
-  uint8_t seen_pix[64];
-  memset(seen_pix, 0, sizeof(seen_pix));
-
-  bool done = 0;
-  while(!done) {
-    sleep(1);
-  }
-    
+  main_decode(outputptr);
+  
   // termination
 
   // cleanup
@@ -94,11 +140,4 @@ int main()
   fclose(outputptr);
   
   return 0;
-}
-
-int index_hash(int r, int g, int b) {
-  return (r * 3 + g * 5 + b * 7) % 64;
-}
-int index_hash_a(int r, int g, int b, int a) {
-  return (r * 3 + g * 5 + b * 7 + a * 11) % 64;
 }
