@@ -5,10 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "lodepng.h" // not going to exist on the microcontroller
+#include "libs/lodepng.h" // not going to exist on the microcontroller
 
-#define INPUT_FILE "apples.png"
-#define OUTPUT_FILE "apples.qoi"
+#define INPUT_FILE "test.png"
+#define OUTPUT_FILE "test.qoi"
+
+
 
 struct pixel {
   uint8_t r;
@@ -17,7 +19,7 @@ struct pixel {
 };
 
 int index_hash(struct pixel pix) {
-  return (pix.r * 3 + pix.g * 5 + pix.b * 7) % 64;
+  return (pix.r * 3 + pix.g * 5 + pix.b * 7 + 255 * 11) % 64;
 }
 int index_hash_a(struct pixel pix, int a) {
   return (pix.r * 3 + pix.g * 5 + pix.b * 7 + a * 11) % 64;
@@ -35,8 +37,14 @@ void main_decode(FILE *outputptr) {
   unsigned width, height;
 
   error = lodepng_decode24_file(&image, &width, &height, INPUT_FILE);
-  if(error) printf("error %u: %s\n", error, lodepng_error_text(error));
-
+  if(error) { printf("error %u: %s\n", error, lodepng_error_text(error)); while(1);};
+  int firstpix = 10;
+  printf("first %d pixels: ",firstpix);
+  for (int i = 0; i < firstpix; i++) {
+    printf("%02X%02X%02X ", image[3*i], image[3*i + 1], image[3*i + 2]);
+  }
+  printf("\n");
+  
   struct pixel seen_pix[64];
   memset(seen_pix, 0, sizeof(seen_pix));
   struct pixel prev_pix = {0,0,0};
@@ -114,7 +122,7 @@ int main()
   FILE *inputptr;
   inputptr = fopen(INPUT_FILE, "rb");
   FILE *outputptr;
-  outputptr = fopen(OUTPUT_FILE, "wb");
+  outputptr = fopen(OUTPUT_FILE, "wb+");
 
   if (inputptr == NULL) {
     printf("could not open input file %s\n", INPUT_FILE);
@@ -157,24 +165,25 @@ int main()
   fseek(inputptr, 1, SEEK_CUR);
   fread(&color_type, 1, 1, inputptr);
   uint8_t channels;
-  if (color_type == 2) {
-    channels = 3;
-  } else if (color_type == 6) {
-    channels = 4;
-  } else {
-    printf("error, non-compatible color type [%d]", color_type);
-    return -1;
-  }
+  //if (color_type == 2) {
+  //  channels = 3;
+  //} else if (color_type == 6) {
+  //  channels = 4;
+  //} else {
+  //  printf("error, non-compatible color type [%d]", color_type);
+  //  return -1;
+  //}
 
   // populate header
-  uint8_t header[14] = {'q','o','i','f'};
+  uint8_t header[14] = {'q','o','i','f',0,0,0,0,0,0,0,0,0,0};
   memcpy(header + 4*sizeof(uint8_t), width_arr, 4*sizeof(uint8_t));
   memcpy(header + 8*sizeof(uint8_t), height_arr, 4*sizeof(uint8_t));
-  header[12] = channels;
+  header[12] = 3;//channels;
   header[13] = 0; // assume sRGB
   printf("the header: ");
   for (int i = 0; i < 14; i++) printf("[%x] ",header[i]);
-
+  printf("\n");
+  
   int n = sizeof(header) / sizeof(uint8_t);
   fwrite(header, sizeof(uint8_t), n, outputptr); //header
 
@@ -183,7 +192,7 @@ int main()
   // - - - - - - - - - - - - -
   
   // termination
-  char end[8] = {0, 0, 0, 0, 0, 0, 0, 1};
+  uint8_t end[8] = {0, 0, 0, 0, 0, 0, 0, 1};
   fwrite(end, 1, 8, outputptr);
   printf("done done!\n");
 
