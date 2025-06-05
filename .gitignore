@@ -1,6 +1,10 @@
-compress.c~
+qoi/compress.c~
 .DS_Store
 .gitignore~
-a.out
-*.png
-*.qoi
+qoi/a.out
+qoi/*.png
+qoi/*.qoi
+qoi/outs
+qoi/passed
+qoi/sources
+qoi/qoiconv

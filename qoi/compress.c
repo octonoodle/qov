@@ -105,20 +105,6 @@ void main_decode(FILE *outputptr) {
 	  uint8_t diff = 64 + 16 * dr + 4 * dg + db;
 	  fwrite(&diff, 1, 1, outputptr);
 	} else if ((dr_dg < 8 && dr_dg > -9) && (dg < 32 && dg > -33) && (db_dg < 8 && db_dg > -9)) { // use luma [-8 to 7]
-	  // if (dr < 0) {
-    //   dr = dr + 256;
-    // }
-    // if (db < 0) {
-    //   db = dr + 256;
-    // }
-    // uint8_t round_dg;
-    // if (dg < 0) {
-    //   round_dg = dg + 256;
-    // } else {
-    //   round_dg = dg;
-    // }
-    // uint8_t dr_dg = dr - round_dg;
-	  // uint8_t db_dg = db - round_dg;
     uint8_t byte2 = (dr_dg + 8) * 16 + db_dg + 8;
 	  uint8_t luma[2] = {128 + dg + 32, byte2};
 	  fwrite(luma, 1, 2, outputptr);
@@ -129,15 +115,10 @@ void main_decode(FILE *outputptr) {
       }
     }
 
-  //   // very important!
+    // very important!
     prev_pix = this_pix;
   }
   
-  //printf("\n");
-  //for (int j = 0; j <40; j+=4) {
-  //  int i = j + (4 * width * height / 2) + 13300;
-  //  printf("pixel %d: %02X%02X%02X\n",i/3,image[i],image[i+1],image[i+2]);
-  //}
   if(n == 4) {
     // image buffer loaded with stb_png, need to use devoted free
     stbi_image_free(image);
